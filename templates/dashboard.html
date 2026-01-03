@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}HackTJ Ops · Dashboard{% endblock %}
+
+{% block content %}
+  <section class="hero">
+    <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:1.25rem;">
+      <div>
+        <p class="muted">blah blah</p>
+        <h1 style="margin-bottom:0.4rem;">blah blah</h1>
+        <p class="muted">blah blah</p>
+      </div>
+      <div>
+        <p class="muted">blah blah</p>
+        <div class="pill">{{ role_display }}</div>
+        {% if team %}
+          <p class="muted" style="margin-top:0.35rem;">blah blah</p>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <div class="grid two">
+    <section class="card">
+      <h2>Basic event info</h2>
+      <p class="muted">blah blah</p>
+    </section>
+
+    <section class="card">
+      <h2>Announcements</h2>
+      <p class="muted">blah blah</p>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Useful links</h2>
+    <p class="muted">blah blah</p>
+  </section>
+
+  <section class="card">
+    <h2>Schedule &amp; deadlines</h2>
+    <p class="muted">blah blah</p>
+  </section>
+
+  {% if show_forms %}
+    <section class="card">
+      <h2>Forms &amp; submissions</h2>
+      <p class="muted">blah blah</p>
+    </section>
+  {% endif %}
+
+  {% if show_project_sections %}
+    <div class="grid two">
+      <section class="card">
+        <h2>Project snapshot</h2>
+        <p class="muted">blah blah</p>
+      </section>
+
+      <section class="card">
+        <h2>Presentation slides</h2>
+        <p class="muted">blah blah</p>
+      </section>
+    </div>
+  {% endif %}
+
+  {% if show_judging %}
+    <section class="card">
+      <h2>Judging appointments</h2>
+      <p class="muted">blah blah</p>
+    </section>
+  {% endif %}
+
+  {% if show_food_team or show_food_ops or show_category_section %}
+    <div class="grid two">
+      {% if show_food_team %}
+        <section class="card">
+          <h2>Food check-in</h2>
+          <p class="muted">blah blah</p>
+        </section>
+      {% elif show_food_ops %}
+        <section class="card">
+          <h2>Food check-in</h2>
+          <p class="muted">blah blah</p>
+        </section>
+      {% endif %}
+
+      {% if show_category_section %}
+        <section class="card">
+          <h2>Category submission checklist</h2>
+          <p class="muted">blah blah</p>
+        </section>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if show_master_projects %}
+    <section class="card">
+      <h2>Master project list</h2>
+      <p class="muted">blah blah</p>
+    </section>
+  {% endif %}
+
+  {% if show_integrity or show_scoreboard %}
+    <div class="grid two">
+      {% if show_integrity %}
+        <section class="card">
+          <h2>Integrity reports</h2>
+          <p class="muted">blah blah</p>
+        </section>
+      {% endif %}
+
+      {% if show_scoreboard %}
+        <section class="card">
+          <h2>Scoreboard</h2>
+          <p class="muted">blah blah</p>
+        </section>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if show_admin_panel %}
+    <section class="card">
+      <h2>Admin panel / SQL console</h2>
+      <p class="muted">blah blah</p>
+    </section>
+  {% endif %}
+{% endblock %}

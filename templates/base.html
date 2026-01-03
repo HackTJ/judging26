@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}HackTJr{% endblock %}</title>
+    <style>
+      :root {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        --border: #d3d3d3;
+        --muted: #5b5b5b;
+        --soft: #f5f5f5;
+        --strong: #111;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #fff;
+        color: #111;
+      }
+
+      header {
+        border-bottom: 1px solid var(--border);
+        padding: 0.75rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+
+      .brand {
+        font-weight: 700;
+        font-size: 1.2rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      nav {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      nav a {
+        text-decoration: none;
+        color: var(--muted);
+        font-weight: 500;
+      }
+
+      nav a.active {
+        color: var(--strong);
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .btn,
+      button {
+        border: 1px solid #000;
+        background: #fff;
+        color: #000;
+        padding: 0.4rem 1rem;
+        border-radius: 0.35rem;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      form button {
+        background: #000;
+        color: #fff;
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem 4rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .grid {
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      .grid.two {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      }
+
+      .card {
+        background: var(--soft);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+      }
+
+      .card h2,
+      .card h3,
+      .card h4 {
+        margin-top: 0;
+        color: var(--strong);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 0.45rem 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.2rem 0.55rem;
+        border-radius: 0.35rem;
+        border: 1px solid var(--border);
+        font-size: 0.8rem;
+        font-weight: 600;
+        background: #fff;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .hero {
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        border: 1px solid var(--border);
+        background: #fff;
+      }
+
+      footer {
+        text-align: center;
+        padding: 2rem 1rem;
+        color: var(--muted);
+        font-size: 0.85rem;
+        border-top: 1px solid var(--border);
+        margin-top: 2rem;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.35rem;
+        border: 1px solid var(--border);
+        background: #fff;
+        color: #111;
+      }
+
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+      }
+    </style>
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <span>HackTJ Ops</span>
+        {% if user.is_authenticated %}
+          <span class="pill">
+            {% if role_display %}
+              {{ role_display }}
+            {% elif user.is_superuser and user.role != "admin" %}
+              Admin
+            {% else %}
+              {{ user.get_role_display }}
+            {% endif %}
+          </span>
+        {% endif %}
+      </div>
+      <nav>
+        {% if user.is_authenticated %}
+          <a href="{% url 'dashboard' %}" class="active">Dashboard</a>
+        {% else %}
+          <a href="{% url 'login' %}" class="active">Login</a>
+        {% endif %}
+      </nav>
+      <div class="actions">
+        {% if user.is_authenticated %}
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit">Log out</button>
+          </form>
+        {% else %}
+          <a class="btn" href="{% url 'login' %}">Log in</a>
+        {% endif %}
+      </div>
+    </header>
+    <main class="container">
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>
