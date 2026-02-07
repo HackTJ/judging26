@@ -6,8 +6,6 @@ from django.utils import timezone
 
 from core.models import (
   Announcement,
-  FoodCheckIn,
-  FoodRegistration,
   FormDefinition,
   FormSubmission,
   IntegrityReport,
@@ -18,6 +16,7 @@ from core.models import (
   ScoreRecord,
   SiteContent,
   UsefulLink,
+  FoodCheckInStatus,
 )
 from .models import User
 
@@ -121,8 +120,6 @@ def dashboard(request):
   show_project_sections = is_team_role
   show_category_section = is_team_role
   show_judging = (is_team_role or role in (User.Role.JUDGE, User.Role.ADMIN, User.Role.HACKTJ))
-  show_food_team = is_team_role
-  show_food_ops = role in (User.Role.VOLUNTEER, User.Role.ADMIN, User.Role.HACKTJ)
   show_master_projects = role in (User.Role.ADMIN, User.Role.JUDGE, User.Role.HACKTJ)
   show_integrity = role in (User.Role.ADMIN, User.Role.JUDGE)
   show_scoreboard = role in (User.Role.ADMIN, User.Role.JUDGE)
@@ -148,13 +145,6 @@ def dashboard(request):
     else:
       upcoming_appointments = JudgingAppointment.objects.all()[:10]
 
-  food_registrations = []
-  food_checkins = []
-  if show_food_team and team:
-    food_registrations = FoodRegistration.objects.filter(team=team).prefetch_related("checkins")
-  if show_food_ops:
-    food_checkins = FoodCheckIn.objects.select_related("registration").order_by("-checked_in_at")[:25]
-
   master_projects = Project.objects.select_related("team").all() if show_master_projects else []
   integrity_reports = IntegrityReport.objects.select_related("project").all() if show_integrity else []
   top_scores = ScoreRecord.objects.select_related("project", "judge").order_by("-scaled_score", "-raw_score")[:5] if show_scoreboard else []
@@ -171,8 +161,6 @@ def dashboard(request):
     "presentation": presentation,
     "presentation_embed_url": presentation_embed_url,
     "upcoming_appointments": upcoming_appointments,
-    "food_registrations": food_registrations,
-    "food_checkins": food_checkins,
     "master_projects": master_projects,
     "integrity_reports": integrity_reports,
     "top_scores": top_scores,
@@ -182,8 +170,6 @@ def dashboard(request):
     "show_project_sections": show_project_sections,
     "show_category_section": show_category_section,
     "show_judging": show_judging,
-    "show_food_team": show_food_team,
-    "show_food_ops": show_food_ops,
     "show_master_projects": show_master_projects,
     "show_integrity": show_integrity,
     "show_scoreboard": show_scoreboard,
@@ -191,6 +177,63 @@ def dashboard(request):
   }
 
   return render(request, "dashboard.html", context)
+
+
+@login_required
+def food_checkin(request):
+  user: User = request.user
+  role = _effective_role(user)
+
+  if role not in (User.Role.ADMIN, User.Role.VOLUNTEER):
+    raise PermissionDenied("You do not have access to the food check-in page.")
+
+  meal_options = [
+    ("breakfast", "Breakfast"),
+    ("lunch", "Lunch"),
+    ("dinner", "Dinner"),
+    ("midnight_snack", "Midnight Snack"),
+  ]
+
+  context = {
+    "meal_options": meal_options,
+    "status": None,
+    "status_data": None,
+    "submitted_badge_id": None,
+    "selected_meal": None,
+  }
+
+  if request.method == "POST":
+    badge_id = request.POST.get("badge_id", "").strip()
+    meal = request.POST.get("meal", "").strip()
+
+    context["submitted_badge_id"] = badge_id
+    context["selected_meal"] = meal
+
+    valid_meals = {key for key, _ in meal_options}
+    if not badge_id or not meal:
+      context["status"] = ("error", "Scan a badge ID and select a meal.")
+    elif meal not in valid_meals:
+      context["status"] = ("error", "Invalid meal selection.")
+    else:
+      status_obj, _ = FoodCheckInStatus.objects.get_or_create(badge_id=badge_id)
+      already_checked = getattr(status_obj, meal)
+      if already_checked:
+        context["status"] = ("warn", f"Already eaten ({meal.replace('_', ' ')})")
+      else:
+        setattr(status_obj, meal, True)
+        status_obj.last_checked_in_by = user
+        status_obj.last_checked_in_at = timezone.now()
+        status_obj.save()
+        context["status"] = ("success", f"Enjoy your {meal.replace('_', ' ')}!")
+
+      context["status_data"] = {
+        "breakfast": status_obj.breakfast,
+        "lunch": status_obj.lunch,
+        "dinner": status_obj.dinner,
+        "midnight_snack": status_obj.midnight_snack,
+      }
+
+  return render(request, "food_checkin.html", context)
 
 
 @login_required

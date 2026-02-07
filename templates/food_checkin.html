@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Food Check-In · HackTJ Ops{% endblock %}
+
+{% block extra_head %}
+  <style>
+    .food-wrap {
+      display: flex;
+      justify-content: center;
+    }
+
+    .food-card {
+      width: 100%;
+      max-width: 560px;
+      padding: 2rem;
+    }
+
+    .food-form input,
+    .food-form select,
+    .food-form button {
+      font-size: 1.05rem;
+      padding: 0.85rem 1rem;
+    }
+
+    .flash-success {
+      animation: flash-green 0.5s ease-in-out;
+    }
+
+    .flash-warn,
+    .flash-error {
+      animation: flash-red 0.5s ease-in-out;
+    }
+
+    @keyframes flash-green {
+      0% { background-color: rgba(17, 122, 61, 0.6); }
+      85% { background-color: rgba(17, 122, 61, 0.6); }
+      100% { background-color: transparent; }
+    }
+
+    @keyframes flash-red {
+      0% { background-color: rgba(176, 0, 32, 0.65); }
+      85% { background-color: rgba(176, 0, 32, 0.65); }
+      100% { background-color: transparent; }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <section class="hero">
+    <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:1.25rem;">
+      <div>
+        <h1 style="margin-bottom:0.4rem;">Food Check-In</h1>
+        <p class="muted">Scan a badge ID to record a meal.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="food-wrap">
+    <section class="card food-card">
+    <h2>Check in a meal</h2>
+    <form method="post" class="food-form" style="display:flex; flex-direction:column; gap:0.75rem;">
+      {% csrf_token %}
+      <div>
+        <label for="meal">Meal</label>
+        <select id="meal" name="meal" required>
+          <option value="">Select meal</option>
+          {% for value, label in meal_options %}
+            <option value="{{ value }}" {% if selected_meal == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="badge_id">Badge ID</label>
+        <input
+          id="badge_id"
+          name="badge_id"
+          type="text"
+          autocomplete="off"
+          placeholder="Scan or type badge ID"
+          value="{{ submitted_badge_id|default:'' }}"
+          autofocus
+          required
+        />
+      </div>
+      <button type="submit">Submit ID</button>
+    </form>
+
+    {% if status %}
+      {% with level=status.0 message=status.1 %}
+        <div style="margin-top:1rem; font-weight:600; color:{% if level == 'success' %}#117a3d{% elif level == 'warn' %}#8a5a00{% else %}#b00020{% endif %};">
+          {{ message }}
+          {% if submitted_badge_id %}
+            <span class="muted" style="margin-left:0.5rem;">(ID: {{ submitted_badge_id }})</span>
+          {% endif %}
+        </div>
+      {% endwith %}
+    {% endif %}
+
+    {% if status_data %}
+      <div style="margin-top:1rem; display:flex; gap:0.75rem; flex-wrap:wrap;">
+        <span class="pill" style="border-color:{% if status_data.breakfast %}#117a3d{% else %}#d3d3d3{% endif %};">
+          Breakfast{% if status_data.breakfast %} ✓{% endif %}
+        </span>
+        <span class="pill" style="border-color:{% if status_data.lunch %}#117a3d{% else %}#d3d3d3{% endif %};">
+          Lunch{% if status_data.lunch %} ✓{% endif %}
+        </span>
+        <span class="pill" style="border-color:{% if status_data.dinner %}#117a3d{% else %}#d3d3d3{% endif %};">
+          Dinner{% if status_data.dinner %} ✓{% endif %}
+        </span>
+        <span class="pill" style="border-color:{% if status_data.midnight_snack %}#117a3d{% else %}#d3d3d3{% endif %};">
+          Midnight snack{% if status_data.midnight_snack %} ✓{% endif %}
+        </span>
+      </div>
+    {% endif %}
+    </section>
+  </div>
+
+  {% if status %}
+    <script>
+      (function () {
+        const level = "{{ status.0 }}";
+        const className = level === "success" ? "flash-success" : (level === "warn" ? "flash-warn" : "flash-error");
+        document.body.classList.add(className);
+        setTimeout(() => document.body.classList.remove(className), 2000);
+      })();
+    </script>
+  {% endif %}
+{% endblock %}

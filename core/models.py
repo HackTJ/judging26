@@ -331,38 +331,23 @@ class ScoreRecord(TimeStampedModel):
     return f"{self.project} - {self.judge}"
 
 
-class FoodRegistration(TimeStampedModel):
-  team = models.ForeignKey(
-    Team,
-    on_delete=models.CASCADE,
-    related_name="food_registrations",
-  )
-  person_name = models.CharField(max_length=255)
-  badge_id = models.CharField(max_length=64, help_text="Same as barcode on the badge.")
-  meal_type = models.CharField(max_length=64)
-  notes = models.TextField(blank=True)
-
-  def __str__(self):
-    return f"{self.person_name} ({self.meal_type})"
-
-
-class FoodCheckIn(TimeStampedModel):
-  registration = models.ForeignKey(
-    FoodRegistration,
-    on_delete=models.CASCADE,
-    related_name="checkins",
-  )
-  checked_in_at = models.DateTimeField(auto_now_add=True)
-  recorded_by = models.ForeignKey(
+class FoodCheckInStatus(TimeStampedModel):
+  badge_id = models.CharField(max_length=64, unique=True)
+  breakfast = models.BooleanField(default=False)
+  lunch = models.BooleanField(default=False)
+  dinner = models.BooleanField(default=False)
+  midnight_snack = models.BooleanField(default=False)
+  last_checked_in_by = models.ForeignKey(
     settings.AUTH_USER_MODEL,
     on_delete=models.SET_NULL,
     blank=True,
     null=True,
-    related_name="food_checkins",
+    related_name="food_status_updates",
   )
+  last_checked_in_at = models.DateTimeField(blank=True, null=True)
 
   def __str__(self):
-    return f"{self.registration.person_name} @ {self.checked_in_at}"
+    return f"{self.badge_id}"
 
 
 class IntegrityReport(TimeStampedModel):

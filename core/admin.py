@@ -10,8 +10,7 @@ from .models import (
   JudgingAppointment,
   PresentationSubmission,
   ScoreRecord,
-  FoodRegistration,
-  FoodCheckIn,
+  FoodCheckInStatus,
   IntegrityReport,
   Announcement,
 )
@@ -79,16 +78,10 @@ class ScoreRecordAdmin(admin.ModelAdmin):
   list_filter = ("judge",)
 
 
-@admin.register(FoodRegistration)
-class FoodRegistrationAdmin(admin.ModelAdmin):
-  list_display = ("person_name", "team", "meal_type", "badge_id")
-  search_fields = ("person_name", "badge_id", "team__team_name")
-
-
-@admin.register(FoodCheckIn)
-class FoodCheckInAdmin(admin.ModelAdmin):
-  list_display = ("registration", "checked_in_at", "recorded_by")
-  list_filter = ("recorded_by",)
+@admin.register(FoodCheckInStatus)
+class FoodCheckInStatusAdmin(admin.ModelAdmin):
+  list_display = ("badge_id", "breakfast", "lunch", "dinner", "midnight_snack", "last_checked_in_at")
+  search_fields = ("badge_id",)
 
 
 @admin.register(IntegrityReport)
