@@ -1,7 +1,8 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
-
 
 class TimeStampedModel(models.Model):
   created_at = models.DateTimeField(auto_now_add=True)
@@ -80,10 +81,49 @@ class Project(TimeStampedModel):
   is_web = models.BooleanField(default=True)
   uses_ai_ml = models.BooleanField(default=False)
   is_roam = models.BooleanField(default=False)
-  slides_link = models.URLField(blank=True)
+  category_submitted_at = models.DateTimeField(blank=True, null=True)
+  full_submitted_at = models.DateTimeField(blank=True, null=True)
 
   def __str__(self):
     return self.title
+
+
+class PresentationSubmission(TimeStampedModel):
+  project = models.OneToOneField(
+    Project,
+    on_delete=models.CASCADE,
+    related_name="presentation",
+  )
+  link_url = models.URLField(blank=True)
+  is_public_link_valid = models.BooleanField(
+    blank=True,
+    null=True,
+    help_text="Whether the public link has been validated.",
+  )
+  submitted_at = models.DateTimeField(default=timezone.now)
+
+  class Meta:
+    constraints = [
+      models.CheckConstraint(
+        check=(
+          Q(link_url__gt="")
+        ),
+        name="presentation_submission_google_slides_only",
+      ),
+    ]
+
+  def clean(self):
+    super().clean()
+    has_link = bool(self.link_url)
+
+    if not has_link:
+      raise ValidationError("Provide a Google Slides link only.")
+
+    if "docs.google.com/presentation" not in self.link_url:
+      raise ValidationError("Only Google Slides links are supported.")
+
+  def __str__(self):
+    return f"{self.project} - presentation"
 
 
 class UsefulLink(TimeStampedModel):
@@ -197,12 +237,6 @@ class JudgingAppointment(TimeStampedModel):
     settings.AUTH_USER_MODEL,
     related_name="judging_appointments",
     blank=True,
-  )
-  slides_link = models.URLField(blank=True)
-  slides_file = models.FileField(
-    upload_to="slides/",
-    blank=True,
-    null=True,
   )
   rubric_data = models.JSONField(default=dict, blank=True)
   notes = models.TextField(blank=True)

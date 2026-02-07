@@ -58,7 +58,42 @@
 
       <section class="card">
         <h2>Presentation slides</h2>
-        <p class="muted">blah blah</p>
+        {% if presentation %}
+          <p class="muted">One submission per team. Google Slides links only.</p>
+          <div style="display:flex; flex-direction:column; gap:0.75rem;">
+            {% if presentation.link_url %}
+              <div>
+                <strong>Public link</strong>
+                <div style="margin-top:0.35rem;">
+                  <a class="btn" href="{{ presentation.link_url }}" target="_blank" rel="noopener">Open slides</a>
+                </div>
+              </div>
+              {% if presentation_embed_url %}
+                <div style="border:1px solid #d3d3d3; border-radius:0.5rem; overflow:hidden;">
+                  <iframe
+                    src="{{ presentation_embed_url }}"
+                    title="Presentation slides"
+                    style="width:100%; height:420px; border:0;"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+              {% else %}
+                <p class="muted">Only Google Slides links are supported for preview.</p>
+              {% endif %}
+            {% endif %}
+            <div class="card" style="background:#fff;">
+              <h3 style="margin-bottom:0.5rem;">Presentation timer</h3>
+              <div id="timer-display" style="font-size:1.6rem; font-weight:700;">00:00</div>
+              <div style="display:flex; gap:0.5rem; margin-top:0.75rem;">
+                <button type="button" id="timer-start">Start</button>
+                <button type="button" id="timer-pause">Pause</button>
+                <button type="button" id="timer-reset">Reset</button>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <p class="muted">No slides submitted yet. Add a Google Slides link or upload a .pptx/.pdf file.</p>
+        {% endif %}
       </section>
     </div>
   {% endif %}
@@ -124,4 +159,54 @@
       <p class="muted">blah blah</p>
     </section>
   {% endif %}
+
+  <script>
+    (function () {
+      const display = document.getElementById("timer-display");
+      if (!display) return;
+
+      const startBtn = document.getElementById("timer-start");
+      const pauseBtn = document.getElementById("timer-pause");
+      const resetBtn = document.getElementById("timer-reset");
+
+      let startTime = null;
+      let elapsed = 0;
+      let rafId = null;
+
+      const formatTime = (ms) => {
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+        const seconds = String(totalSeconds % 60).padStart(2, "0");
+        return `${minutes}:${seconds}`;
+      };
+
+      const tick = (now) => {
+        if (startTime === null) return;
+        const current = elapsed + (now - startTime);
+        display.textContent = formatTime(current);
+        rafId = requestAnimationFrame(tick);
+      };
+
+      startBtn?.addEventListener("click", () => {
+        if (startTime !== null) return;
+        startTime = performance.now();
+        rafId = requestAnimationFrame(tick);
+      });
+
+      pauseBtn?.addEventListener("click", () => {
+        if (startTime === null) return;
+        elapsed += performance.now() - startTime;
+        startTime = null;
+        if (rafId) cancelAnimationFrame(rafId);
+        display.textContent = formatTime(elapsed);
+      });
+
+      resetBtn?.addEventListener("click", () => {
+        startTime = null;
+        elapsed = 0;
+        if (rafId) cancelAnimationFrame(rafId);
+        display.textContent = "00:00";
+      });
+    })();
+  </script>
 {% endblock %}

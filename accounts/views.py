@@ -1,6 +1,7 @@
 from datetime import timedelta
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
 from core.models import (
@@ -11,6 +12,7 @@ from core.models import (
   FormSubmission,
   IntegrityReport,
   JudgingAppointment,
+  PresentationSubmission,
   Project,
   ScheduleItem,
   ScoreRecord,
@@ -83,11 +85,31 @@ def _links_for_user(role):
   return USEFUL_LINK_PLACEHOLDERS
 
 
+def _presentation_embed_url(presentation: PresentationSubmission | None) -> str | None:
+  if not presentation or not presentation.link_url:
+    return None
+
+  url = presentation.link_url.strip()
+
+  if "docs.google.com/presentation" in url:
+    if "/embed" in url:
+      return url
+    if "/edit" in url:
+      return url.replace("/edit", "/embed")
+    if "edit?" in url:
+      return url.replace("edit?", "embed?")
+    return url
+
+  return None
+
+
 @login_required
 def dashboard(request):
   user: User = request.user
   team = getattr(user, "team_profile", None)
   project = getattr(team, "project", None) if team else None
+  presentation = getattr(project, "presentation", None) if project else None
+  presentation_embed_url = _presentation_embed_url(presentation)
 
   role = _effective_role(user)
   role_display = dict(User.Role.choices).get(role, role.title())
@@ -143,6 +165,8 @@ def dashboard(request):
     "announcements": announcements,
     "team": team,
     "project": project,
+    "presentation": presentation,
+    "presentation_embed_url": presentation_embed_url,
     "upcoming_appointments": upcoming_appointments,
     "food_registrations": food_registrations,
     "food_checkins": food_checkins,
@@ -164,3 +188,26 @@ def dashboard(request):
   }
 
   return render(request, "dashboard.html", context)
+
+
+@login_required
+def presentation_viewer(request, project_id: int):
+  user: User = request.user
+  team = getattr(user, "team_profile", None)
+  role = _effective_role(user)
+
+  project = get_object_or_404(Project.objects.select_related("team"), id=project_id)
+  presentation = getattr(project, "presentation", None)
+
+  if role == User.Role.TEAM:
+    if not team or getattr(team, "project_id", None) != project.id:
+      raise PermissionDenied("You do not have access to this presentation.")
+  elif role not in (User.Role.JUDGE, User.Role.ADMIN, User.Role.HACKTJ):
+    raise PermissionDenied("You do not have access to this presentation.")
+
+  context = {
+    "project": project,
+    "presentation": presentation,
+    "presentation_embed_url": _presentation_embed_url(presentation),
+  }
+  return render(request, "presentation_viewer.html", context)

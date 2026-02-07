@@ -7,6 +7,7 @@ from .models import (
   FormDefinition,
   FormSubmission,
   JudgingAppointment,
+  PresentationSubmission,
   ScoreRecord,
   FoodRegistration,
   FoodCheckIn,
@@ -51,6 +52,12 @@ class FormDefinitionAdmin(admin.ModelAdmin):
 class FormSubmissionAdmin(admin.ModelAdmin):
   list_display = ("form", "team", "submitted_at")
   search_fields = ("team__team_name",)
+
+
+@admin.register(PresentationSubmission)
+class PresentationSubmissionAdmin(admin.ModelAdmin):
+  list_display = ("project", "submitted_at", "link_url")
+  search_fields = ("project__title", "project__team__team_name")
 
 
 @admin.register(JudgingAppointment)

@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ project.title }} · Presentation</title>
+    <style>
+      :root {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        --bg: #0d0d0d;
+        --panel: rgba(255, 255, 255, 0.08);
+        --border: rgba(255, 255, 255, 0.2);
+        --text: #f5f5f5;
+        --muted: rgba(245, 245, 245, 0.7);
+        --accent: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .top-bar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        background: rgba(13, 13, 13, 0.9);
+        border-bottom: 1px solid var(--border);
+        backdrop-filter: blur(6px);
+      }
+
+      .top-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .project-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .viewer {
+        position: relative;
+        width: 100%;
+        height: calc(100vh - 88px);
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+      }
+
+      .slide-frame {
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+
+      .fallback {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 0.75rem;
+        text-align: center;
+        padding: 2rem;
+      }
+
+      .btn {
+        border: 1px solid var(--accent);
+        background: transparent;
+        color: var(--accent);
+        padding: 0.5rem 1rem;
+        border-radius: 0.45rem;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .timer {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.4rem 0.6rem 0.4rem 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+
+      .timer-display {
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        min-width: 70px;
+        text-align: center;
+      }
+
+      .timer-controls {
+        display: flex;
+        gap: 0.4rem;
+      }
+
+      .timer-controls button {
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text);
+        padding: 0.35rem 0.7rem;
+        border-radius: 0.4rem;
+        cursor: pointer;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top-bar">
+      <div class="top-left">
+        <a class="btn" href="/projects/{{ project.id }}/">Back to project</a>
+        <div class="project-title">{{ project.title }}</div>
+      </div>
+      <div class="timer">
+        <div id="timer-display" class="timer-display">00:00</div>
+        <div class="timer-controls">
+          <button type="button" id="timer-start">Start</button>
+          <button type="button" id="timer-pause">Pause</button>
+          <button type="button" id="timer-reset">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="viewer">
+      {% if presentation %}
+        {% if presentation.link_url %}
+          {% if presentation_embed_url %}
+            <iframe
+              class="slide-frame"
+              src="{{ presentation_embed_url }}"
+              title="Presentation slides"
+              allowfullscreen
+            ></iframe>
+          {% else %}
+            <div class="fallback">
+              <h1 style="margin:0;">Presentation link</h1>
+              <p class="muted" style="color:var(--muted); margin:0;">
+                Only Google Slides links are supported for viewing.
+              </p>
+              <a class="btn" href="{{ presentation.link_url }}" target="_blank" rel="noopener">Open slides</a>
+            </div>
+          {% endif %}
+        {% endif %}
+      {% else %}
+        <div class="fallback">
+          <h1 style="margin:0;">No presentation submitted</h1>
+          <p class="muted" style="color:var(--muted); margin:0;">
+            There is no Google Slides link submitted for this project.
+          </p>
+        </div>
+      {% endif %}
+    </div>
+
+    <script>
+      (function () {
+        const display = document.getElementById("timer-display");
+        const startBtn = document.getElementById("timer-start");
+        const pauseBtn = document.getElementById("timer-pause");
+        const resetBtn = document.getElementById("timer-reset");
+
+        let startTime = null;
+        let elapsed = 0;
+        let rafId = null;
+
+        const formatTime = (ms) => {
+          const totalSeconds = Math.floor(ms / 1000);
+          const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+          const seconds = String(totalSeconds % 60).padStart(2, "0");
+          return `${minutes}:${seconds}`;
+        };
+
+        const tick = (now) => {
+          if (startTime === null) return;
+          const current = elapsed + (now - startTime);
+          display.textContent = formatTime(current);
+          rafId = requestAnimationFrame(tick);
+        };
+
+        startBtn?.addEventListener("click", () => {
+          if (startTime !== null) return;
+          startTime = performance.now();
+          rafId = requestAnimationFrame(tick);
+        });
+
+        pauseBtn?.addEventListener("click", () => {
+          if (startTime === null) return;
+          elapsed += performance.now() - startTime;
+          startTime = null;
+          if (rafId) cancelAnimationFrame(rafId);
+          display.textContent = formatTime(elapsed);
+        });
+
+        resetBtn?.addEventListener("click", () => {
+          startTime = null;
+          elapsed = 0;
+          if (rafId) cancelAnimationFrame(rafId);
+          display.textContent = "00:00";
+        });
+      })();
+    </script>
+  </body>
+</html>
