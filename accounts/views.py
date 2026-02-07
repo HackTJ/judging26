@@ -16,6 +16,7 @@ from core.models import (
   Project,
   ScheduleItem,
   ScoreRecord,
+  SiteContent,
   UsefulLink,
 )
 from .models import User
@@ -108,6 +109,7 @@ def dashboard(request):
   user: User = request.user
   team = getattr(user, "team_profile", None)
   project = getattr(team, "project", None) if team else None
+  site_content = SiteContent.objects.first()
   presentation = getattr(project, "presentation", None) if project else None
   presentation_embed_url = _presentation_embed_url(presentation)
 
@@ -163,6 +165,7 @@ def dashboard(request):
     "schedule_items": schedule_items,
     "useful_links": useful_links,
     "announcements": announcements,
+    "site_content": site_content,
     "team": team,
     "project": project,
     "presentation": presentation,

@@ -149,6 +149,50 @@ class UsefulLink(TimeStampedModel):
     return self.title
 
 
+class SiteContent(TimeStampedModel):
+  wifi_name = models.CharField(max_length=128, blank=True)
+  wifi_password = models.CharField(max_length=128, blank=True)
+  additional_all = models.FileField(
+    upload_to="site_content/",
+    blank=True,
+    null=True,
+    help_text="HTML file shown to all roles.",
+  )
+  additional_team = models.FileField(
+    upload_to="site_content/",
+    blank=True,
+    null=True,
+    help_text="HTML file shown to student/team accounts.",
+  )
+  additional_judge = models.FileField(
+    upload_to="site_content/",
+    blank=True,
+    null=True,
+    help_text="HTML file shown to judge accounts.",
+  )
+  additional_hacktj = models.FileField(
+    upload_to="site_content/",
+    blank=True,
+    null=True,
+    help_text="HTML file shown to HackTJ team accounts.",
+  )
+  additional_admin = models.FileField(
+    upload_to="site_content/",
+    blank=True,
+    null=True,
+    help_text="HTML file shown to admin accounts.",
+  )
+  additional_volunteer = models.FileField(
+    upload_to="site_content/",
+    blank=True,
+    null=True,
+    help_text="HTML file shown to volunteer accounts.",
+  )
+
+  def __str__(self):
+    return "Site content"
+
+
 class ScheduleItem(TimeStampedModel):
   class Audience(models.TextChoices):
     ALL = "all", "Everyone"

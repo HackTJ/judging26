@@ -3,6 +3,7 @@ from .models import (
   Team,
   Project,
   UsefulLink,
+  SiteContent,
   ScheduleItem,
   FormDefinition,
   FormSubmission,
@@ -33,6 +34,11 @@ class ProjectAdmin(admin.ModelAdmin):
 class UsefulLinkAdmin(admin.ModelAdmin):
   list_display = ("title", "audience", "is_active")
   list_filter = ("audience", "is_active")
+
+
+@admin.register(SiteContent)
+class SiteContentAdmin(admin.ModelAdmin):
+  list_display = ("wifi_name", "updated_at")
 
 
 @admin.register(ScheduleItem)
