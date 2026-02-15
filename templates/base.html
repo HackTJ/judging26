@@ -80,6 +80,27 @@
         color: #fff;
       }
 
+      .messages {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .message {
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--border);
+        background: #fff;
+      }
+
+      .message.success {
+        border-color: #28a745;
+      }
+
+      .message.error {
+        border-color: #dc3545;
+      }
+
       .container {
         max-width: 1100px;
         margin: 0 auto;
@@ -196,7 +217,12 @@
         {% if user.is_authenticated %}
           <a href="{% url 'food_checkin' %}">Food</a>
           <a href="/judging/">Judging appointments</a>
-          <a href="/projects/">Project list</a>
+          {% if user.is_superuser or user.role == "admin" or user.role == "judge" or user.role == "hacktj" %}
+            <a href="{% url 'project_list' %}">Project list</a>
+          {% endif %}
+          {% if user.role == "team" %}
+            <a href="{% url 'team_project_entry' %}">My project</a>
+          {% endif %}
           {% if user.is_superuser or user.role == "admin" %}
             <a href="/admin/">Django admin</a>
           {% endif %}
@@ -216,6 +242,13 @@
       </div>
     </header>
     <main class="container">
+      {% if messages %}
+        <div class="messages">
+          {% for message in messages %}
+            <div class="message {{ message.tags }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
       {% block content %}{% endblock %}
     </main>
   </body>

@@ -105,9 +105,7 @@ class PresentationSubmission(TimeStampedModel):
   class Meta:
     constraints = [
       models.CheckConstraint(
-        check=(
-          Q(link_url__gt="")
-        ),
+        condition=Q(link_url__gt=""),
         name="presentation_submission_google_slides_only",
       ),
     ]
@@ -392,3 +390,107 @@ class Announcement(TimeStampedModel):
 
   def __str__(self):
     return self.title
+
+
+class ProjectList(TimeStampedModel):
+  class SortField(models.TextChoices):
+    ALPHABETICAL = "alphabetical", "Alphabetical"
+    SCORE_RAW = "score_raw", "Score (Raw)"
+    SCORE_SCALED = "score_scaled", "Score (Scaled)"
+    CREATED = "created", "Created Date"
+
+  title = models.CharField(max_length=255)
+  slug = models.SlugField(unique=True)
+  description = models.TextField(blank=True)
+  audience = models.CharField(
+    max_length=32,
+    choices=ScheduleItem.Audience.choices,
+    default=ScheduleItem.Audience.HACKTJ,
+    help_text="Which account roles may view this list.",
+  )
+  sort_field = models.CharField(
+    max_length=32,
+    choices=SortField.choices,
+    default=SortField.ALPHABETICAL,
+    help_text="Default sort applied when rendering the list.",
+  )
+  sort_descending = models.BooleanField(
+    default=False,
+    help_text="If enabled, reverse the default sort order.",
+  )
+  limit = models.PositiveIntegerField(
+    blank=True,
+    null=True,
+    help_text="Optional limit (top K) applied after sorting.",
+  )
+  filter_config = models.JSONField(
+    default=dict,
+    blank=True,
+    help_text="Structured filters (categories, eligibility, whitelist/blacklist labels, etc).",
+  )
+  is_default = models.BooleanField(
+    default=False,
+    help_text="Automatically load this list for the matching audience.",
+  )
+
+  class Meta:
+    ordering = ["title"]
+    constraints = [
+      models.UniqueConstraint(
+        fields=["audience"],
+        condition=Q(is_default=True),
+        name="projectlist_unique_default_per_audience",
+      ),
+    ]
+
+  def __str__(self):
+    return self.title
+
+
+class ProjectListEntry(TimeStampedModel):
+  project_list = models.ForeignKey(
+    ProjectList,
+    on_delete=models.CASCADE,
+    related_name="entries",
+  )
+  project = models.ForeignKey(
+    Project,
+    on_delete=models.CASCADE,
+    related_name="list_entries",
+  )
+  is_whitelisted = models.BooleanField(
+    default=False,
+    help_text="Always include even when filters would exclude it.",
+  )
+  is_blacklisted = models.BooleanField(
+    default=False,
+    help_text="Always hide even when filters would include it.",
+  )
+  manual_rank = models.PositiveIntegerField(
+    blank=True,
+    null=True,
+    help_text="Force a manual order when present.",
+  )
+  metadata = models.JSONField(
+    default=dict,
+    blank=True,
+    help_text="Cached computations (score snapshots, render hints, etc).",
+  )
+
+  class Meta:
+    unique_together = ("project_list", "project")
+    ordering = ["manual_rank", "project__title"]
+    constraints = [
+      models.CheckConstraint(
+        condition=~(Q(is_whitelisted=True) & Q(is_blacklisted=True)),
+        name="projectlistentry_no_conflicting_flags",
+      ),
+    ]
+
+  def clean(self):
+    super().clean()
+    if self.is_whitelisted and self.is_blacklisted:
+      raise ValidationError("Project list entries cannot be both whitelisted and blacklisted.")
+
+  def __str__(self):
+    return f"{self.project} in {self.project_list}"

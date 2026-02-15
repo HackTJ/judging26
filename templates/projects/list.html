@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Projects{% endblock %}
+
+{% block content %}
+  <section class="hero">
+    <div style="display:flex; flex-direction:column; gap:0.35rem;">
+      <p class="muted" style="margin:0;">Master project list</p>
+      {% if selected_list %}
+        <h1 style="margin:0;">{{ selected_list.title }}</h1>
+      {% else %}
+        <h1 style="margin:0;">All projects</h1>
+      {% endif %}
+      <p class="muted" style="margin:0;">
+        Showing {{ display_count }} of {{ total_projects }} total projects{% if limit %} (limited to top {{ limit }}){% endif %}.
+      </p>
+    </div>
+    <div style="margin-top:1rem; display:flex; gap:0.75rem; align-items:flex-end; flex-wrap:wrap;">
+      {% if available_lists %}
+        <form method="get" style="display:flex; flex-direction:column; gap:0.35rem;">
+          <label for="list-selector">Project view</label>
+          <select id="list-selector" name="list" onchange="this.form.submit()">
+            <option value="" {% if not list_slug %}selected{% endif %}>All projects</option>
+            {% for option in available_lists %}
+              <option value="{{ option.slug }}" {% if option.slug == list_slug %}selected{% endif %}>
+                {{ option.title }}
+              </option>
+            {% endfor %}
+          </select>
+        </form>
+      {% endif %}
+    </div>
+  </section>
+
+  {% if active_filters %}
+    <section class="card">
+      <h2>Active filters</h2>
+      <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+        {% for label in active_filters %}
+          <span class="pill">{{ label }}</span>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="card">
+    <div class="table-responsive" style="overflow-x:auto;">
+      {% if project_rows %}
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Team &amp; project</th>
+              <th>Category</th>
+              <th>Attributes</th>
+              <th>Next judging</th>
+              {% if show_scores %}
+                <th>Avg raw</th>
+                <th>Avg scaled</th>
+              {% endif %}
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in project_rows %}
+              <tr>
+                <td>{{ row.rank }}</td>
+                <td>
+                  <strong>{{ row.team.team_name }}</strong>
+                  <div class="muted">{{ row.project.title }}</div>
+                  {% if row.members %}
+                    <div style="font-size:0.85rem; color:var(--muted); margin-top:0.25rem;">
+                      Members: {{ row.members|join:", " }}
+                    </div>
+                  {% endif %}
+                  {% if row.entry and row.entry.manual_rank %}
+                    <div class="pill" style="margin-top:0.35rem;">Pinned #{{ row.entry.manual_rank }}</div>
+                  {% elif row.entry and row.entry.is_whitelisted %}
+                    <div class="pill" style="margin-top:0.35rem;">Whitelisted</div>
+                  {% endif %}
+                </td>
+                <td>{{ row.project.get_main_category_display }}</td>
+                <td>
+                  {% if row.attributes %}
+                    {% for attr in row.attributes %}
+                      <span class="pill" style="margin-bottom:0.2rem; display:inline-flex;">{{ attr }}</span>
+                    {% endfor %}
+                  {% else %}
+                    <span class="muted">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if row.next_appointment %}
+                    {{ row.next_appointment.start_time|date:"M d, H:i" }}
+                    <span class="muted"> @ {{ row.next_appointment.room }}</span>
+                  {% else %}
+                    <span class="muted">Unscheduled</span>
+                  {% endif %}
+                </td>
+                {% if show_scores %}
+                  <td>
+                    {% if row.score_summary and row.score_summary.avg_raw %}
+                      {{ row.score_summary.avg_raw|floatformat:2 }}
+                    {% else %}
+                      <span class="muted">—</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if row.score_summary and row.score_summary.avg_scaled %}
+                      {{ row.score_summary.avg_scaled|floatformat:2 }}
+                    {% else %}
+                      <span class="muted">—</span>
+                    {% endif %}
+                  </td>
+                {% endif %}
+                <td>
+                  <a class="btn" href="{% url 'project_detail' row.project.id %}">View</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">No projects match this configuration.</p>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

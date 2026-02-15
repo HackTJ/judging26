@@ -20,6 +20,28 @@
     </div>
   </section>
 
+  {% if show_project_sections and project %}
+    <section class="card" id="project-submissions">
+      <h2>Project submissions</h2>
+      <p class="muted" style="margin-top:0;">
+        Manage both forms from your project page. Deadlines are strict — please submit ahead of time.
+      </p>
+      <ul style="margin:0; padding-left:1.25rem;">
+        <li>
+          <strong>Category form</strong> — due {{ category_deadline|date:"M d, Y · H:i" }} (11:30 PM · March 7).
+          <a href="{% url 'project_detail' project.id %}#category-form">Open form</a>
+        </li>
+        <li>
+          <strong>Full project submission</strong> — due {{ submission_deadline|date:"M d, Y · H:i" }} (8:00 AM · March 8).
+          <a href="{% url 'project_detail' project.id %}#submission-form">Open form</a>
+        </li>
+      </ul>
+      <div style="margin-top:0.75rem;">
+        <a class="btn" href="{% url 'project_detail' project.id %}">Go to project page</a>
+      </div>
+    </section>
+  {% endif %}
+
   <section class="card">
     <h2>Basic event info</h2>
     <ul style="margin:0; padding-left:1.25rem;">
@@ -60,10 +82,10 @@
   {% if site_content %}
     <section class="card">
       <h2>Additional updates</h2>
-      {% if site_content.additional_all %}
+      {% if site_content_files.all %}
         <iframe
           title="Additional updates"
-          src="{{ site_content.additional_all.url }}"
+          src="{{ site_content_files.all }}"
           style="width:100%; height:320px; border:1px solid #d3d3d3; border-radius:0.5rem;"
         ></iframe>
       {% else %}
@@ -71,56 +93,56 @@
       {% endif %}
     </section>
 
-    {% if role == "team" and site_content.additional_team %}
+    {% if role == "team" and site_content_files.team %}
       <section class="card">
         <h2>Team updates</h2>
         <iframe
           title="Team updates"
-          src="{{ site_content.additional_team.url }}"
+          src="{{ site_content_files.team }}"
           style="width:100%; height:320px; border:1px solid #d3d3d3; border-radius:0.5rem;"
         ></iframe>
       </section>
     {% endif %}
 
-    {% if role == "judge" and site_content.additional_judge %}
+    {% if role == "judge" and site_content_files.judge %}
       <section class="card">
         <h2>Judge updates</h2>
         <iframe
           title="Judge updates"
-          src="{{ site_content.additional_judge.url }}"
+          src="{{ site_content_files.judge }}"
           style="width:100%; height:320px; border:1px solid #d3d3d3; border-radius:0.5rem;"
         ></iframe>
       </section>
     {% endif %}
 
-    {% if role == "hacktj" and site_content.additional_hacktj %}
+    {% if role == "hacktj" and site_content_files.hacktj %}
       <section class="card">
         <h2>HackTJ team updates</h2>
         <iframe
           title="HackTJ team updates"
-          src="{{ site_content.additional_hacktj.url }}"
+          src="{{ site_content_files.hacktj }}"
           style="width:100%; height:320px; border:1px solid #d3d3d3; border-radius:0.5rem;"
         ></iframe>
       </section>
     {% endif %}
 
-    {% if role == "admin" and site_content.additional_admin %}
+    {% if role == "admin" and site_content_files.admin %}
       <section class="card">
         <h2>Admin updates</h2>
         <iframe
           title="Admin updates"
-          src="{{ site_content.additional_admin.url }}"
+          src="{{ site_content_files.admin }}"
           style="width:100%; height:320px; border:1px solid #d3d3d3; border-radius:0.5rem;"
         ></iframe>
       </section>
     {% endif %}
 
-    {% if role == "volunteer" and site_content.additional_volunteer %}
+    {% if role == "volunteer" and site_content_files.volunteer %}
       <section class="card">
         <h2>Volunteer updates</h2>
         <iframe
           title="Volunteer updates"
-          src="{{ site_content.additional_volunteer.url }}"
+          src="{{ site_content_files.volunteer }}"
           style="width:100%; height:320px; border:1px solid #d3d3d3; border-radius:0.5rem;"
         ></iframe>
       </section>

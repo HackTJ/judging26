@@ -2,6 +2,8 @@ from django.contrib import admin
 from .models import (
   Team,
   Project,
+  ProjectList,
+  ProjectListEntry,
   UsefulLink,
   SiteContent,
   ScheduleItem,
@@ -27,6 +29,21 @@ class ProjectAdmin(admin.ModelAdmin):
   list_display = ("title", "team", "main_category", "is_beginner")
   list_filter = ("main_category", "is_beginner", "uses_ai_ml")
   search_fields = ("title", "team__team_name")
+
+
+@admin.register(ProjectList)
+class ProjectListAdmin(admin.ModelAdmin):
+  list_display = ("title", "slug", "audience", "is_default", "sort_field", "sort_descending", "limit", "updated_at")
+  list_filter = ("audience", "is_default", "sort_field", "sort_descending")
+  search_fields = ("title", "slug")
+  prepopulated_fields = {"slug": ("title",)}
+
+
+@admin.register(ProjectListEntry)
+class ProjectListEntryAdmin(admin.ModelAdmin):
+  list_display = ("project_list", "project", "is_whitelisted", "is_blacklisted", "manual_rank", "updated_at")
+  list_filter = ("project_list", "is_whitelisted", "is_blacklisted")
+  search_fields = ("project__title", "project__team__team_name", "project_list__title")
 
 
 @admin.register(UsefulLink)

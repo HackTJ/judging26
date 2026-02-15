@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Project · {{ project.title }}{% endblock %}
+
+{% block content %}
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+    <a href="{% url 'dashboard' %}" class="muted" style="text-decoration:none;">&larr; Back to dashboard</a>
+    {% if presentation %}
+      <a class="btn" href="{% url 'presentation_viewer' project.id %}">Open presentation</a>
+    {% endif %}
+  </div>
+
+  <section class="hero">
+    <p class="muted" style="margin-bottom:0.25rem;">Project detail</p>
+    <h1 style="margin-top:0; margin-bottom:0.5rem;">{{ project.title }}</h1>
+    <p style="margin:0;"><strong>Team:</strong> {{ team.team_name }}</p>
+    <p class="muted" style="margin:0.25rem 0 0;">Main category: {{ project.get_main_category_display }}</p>
+    {% if eligible_categories %}
+      <p class="muted" style="margin:0.25rem 0 0;">Eligible categories: {{ eligible_categories|join:", " }}</p>
+    {% endif %}
+    {% if project_attributes %}
+      <div style="margin-top:0.75rem; display:flex; flex-wrap:wrap; gap:0.4rem;">
+        {% for attribute in project_attributes %}
+          <span class="pill">{{ attribute }}</span>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if project.repo_url %}
+      <p style="margin-top:0.75rem;">
+        <strong>Repository:</strong>
+        <a href="{{ project.repo_url }}" target="_blank" rel="noopener">{{ project.repo_url }}</a>
+      </p>
+    {% endif %}
+  </section>
+
+  {% if is_team_view and category_form %}
+    <section class="card" id="category-form">
+      <h2>Category submission form</h2>
+      <p class="muted">
+        Due {{ category_deadline|date:"M d, Y · H:i" }} (11:30 PM · March 7).
+        {% if project.category_submitted_at %}
+          Last submitted {{ project.category_submitted_at|date:"M d, H:i" }}.
+        {% endif %}
+      </p>
+      {% if category_locked %}
+        <p class="muted">This form is locked because the deadline has passed.</p>
+      {% endif %}
+      <form method="post" style="display:flex; flex-direction:column; gap:1rem;">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="category" />
+        {% if category_form.non_field_errors %}
+          <div class="message error">
+            {{ category_form.non_field_errors }}
+          </div>
+        {% endif %}
+        <div class="grid two">
+          {% for field in category_form %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}
+                <p class="muted" style="margin:0.25rem 0 0;">{{ field.help_text }}</p>
+              {% endif %}
+              {% for error in field.errors %}
+                <p class="muted" style="color:#dc3545; margin:0.25rem 0 0;">{{ error }}</p>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+        <button type="submit" {% if category_locked %}disabled{% endif %}>
+          Save category form
+        </button>
+      </form>
+    </section>
+  {% endif %}
+
+  {% if is_team_view and submission_form %}
+    <section class="card" id="submission-form">
+      <h2>Full project submission</h2>
+      <p class="muted">
+        Due {{ submission_deadline|date:"M d, Y · H:i" }} (8:00 AM · March 8).
+        {% if project.full_submitted_at %}
+          Last submitted {{ project.full_submitted_at|date:"M d, H:i" }}.
+        {% endif %}
+      </p>
+      {% if submission_locked %}
+        <p class="muted">This form is locked because the deadline has passed.</p>
+      {% endif %}
+      <form method="post" style="display:flex; flex-direction:column; gap:1rem;">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="full" />
+        {% if submission_form.non_field_errors %}
+          <div class="message error">
+            {{ submission_form.non_field_errors }}
+          </div>
+        {% endif %}
+        {% for field in submission_form %}
+          <div>
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}
+              <p class="muted" style="color:#dc3545; margin:0.25rem 0 0;">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endfor %}
+        <button type="submit" {% if submission_locked %}disabled{% endif %}>
+          Save project submission
+        </button>
+      </form>
+    </section>
+  {% endif %}
+
+  <div class="grid two">
+    <section class="card">
+      <h2>Team members</h2>
+      {% if members %}
+        <ul style="margin:0; padding-left:1.25rem;">
+          {% for member in members %}
+            <li>{{ member }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">No team members recorded yet.</p>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h2>Presentation</h2>
+      {% if presentation %}
+        <p class="muted">Submitted {{ presentation.submitted_at|date:"M d, Y · H:i" }}</p>
+        {% if presentation_embed_url %}
+          <iframe
+            src="{{ presentation_embed_url }}"
+            title="Presentation preview"
+            style="width:100%; height:320px; border:1px solid var(--border); border-radius:0.5rem; margin-top:0.75rem;"
+            allowfullscreen
+          ></iframe>
+        {% else %}
+          <p><a href="{{ presentation.link_url }}" target="_blank" rel="noopener">Open link</a></p>
+        {% endif %}
+      {% else %}
+        <p class="muted">No presentation uploaded yet.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  {% if detail_sections %}
+    <section class="card">
+      <h2>Project narrative</h2>
+      <div style="display:flex; flex-direction:column; gap:1rem;">
+        {% for title, body in detail_sections %}
+          <div>
+            <h3 style="margin:0 0 0.25rem;">{{ title }}</h3>
+            <p style="margin:0; white-space:pre-line;">{{ body }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="card">
+    <h2>Form submissions</h2>
+    {% if forms_data %}
+      <div class="grid two">
+        {% for entry in forms_data %}
+          <article class="card" style="background:#fff;">
+            <h3 style="margin-top:0;">{{ entry.form.title }}</h3>
+            <p class="muted" style="margin:0 0 0.5rem;">Submitted {{ entry.submission.submitted_at|date:"M d, Y · H:i" }}</p>
+            {% if entry.data_items %}
+              <ul style="margin:0; padding-left:1.25rem;">
+                {% for key, value in entry.data_items %}
+                  <li><strong>{{ key }}:</strong> {{ value }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="muted">No structured data provided.</p>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">This team has not submitted any forms yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Judging appointments</h2>
+    {% if appointments %}
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Round</th>
+              <th>Room</th>
+              <th>Judges</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for appointment in appointments %}
+              <tr>
+                <td>{{ appointment.start_time|date:"M d, H:i" }} - {{ appointment.end_time|date:"H:i" }}</td>
+                <td>{{ appointment.get_round_name_display }}</td>
+                <td>{{ appointment.room }}</td>
+                <td>
+                  {% with judges=appointment.judges.all %}
+                    {% if judges %}
+                      {% for judge in judges %}
+                        {{ judge.get_full_name|default:judge.username }}{% if not forloop.last %}, {% endif %}
+                      {% endfor %}
+                    {% else %}
+                      <span class="muted">Unassigned</span>
+                    {% endif %}
+                  {% endwith %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="muted">No judging appointments scheduled.</p>
+    {% endif %}
+  </section>
+
+  {% if show_scores %}
+    <section class="card">
+      <h2>Scores</h2>
+      {% if score_summary %}
+        <p class="muted" style="margin-top:0;">
+          {{ score_summary.count }} judging interaction{{ score_summary.count|pluralize }} recorded.
+          {% if score_summary.avg_raw %}
+            Avg raw: {{ score_summary.avg_raw|floatformat:2 }}.
+          {% endif %}
+          {% if score_summary.avg_scaled %}
+            Avg scaled: {{ score_summary.avg_scaled|floatformat:2 }}.
+          {% endif %}
+        </p>
+      {% endif %}
+      {% if score_records %}
+        <table>
+          <thead>
+            <tr>
+              <th>Judge</th>
+              <th>Round</th>
+              <th>Raw</th>
+              <th>Scaled</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for record in score_records %}
+              <tr>
+                <td>{{ record.judge.get_full_name|default:record.judge.username }}</td>
+                <td>{{ record.appointment.get_round_name_display }}</td>
+                <td>{{ record.raw_score|default:"—" }}</td>
+                <td>{{ record.scaled_score|default:"—" }}</td>
+                <td>{{ record.notes|default:"" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">No scores recorded yet.</p>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  {% if show_integrity %}
+    <section class="card">
+      <h2>Integrity reports</h2>
+      {% if integrity_reports %}
+        <table>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Updated</th>
+              <th>Reviewer</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for report in integrity_reports %}
+              <tr>
+                <td>{{ report.get_status_display }}</td>
+                <td>{{ report.updated_at|date:"M d, H:i" }}</td>
+                <td>{{ report.last_reviewed_by.get_full_name|default:report.last_reviewed_by }}</td>
+                <td>{{ report.reviewer_notes|default:"" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">No integrity reports yet.</p>
+      {% endif %}
+    </section>
+  {% endif %}
+{% endblock %}
