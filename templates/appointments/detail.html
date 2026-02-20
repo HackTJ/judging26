@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+
+  <div class="card">
+    <h2>{{ team.team_name }} — {{ project.title }}</h2>
+    <p><b>Room:</b> {{ appointment.room }}</p>
+    <p><b>Round:</b> {{ appointment.get_round_name_display }}</p>
+    <p><b>Category:</b> {{ appointment.category }}</p>
+    <p><b>Time:</b> {{ appointment.start_time|date:"M j, g:i A" }} – {{ appointment.end_time|date:"g:i A" }}</p>
+
+    {% if presentation and presentation.link_url %}
+      <p><b>Slides:</b> <a href="{{ presentation.link_url }}" target="_blank" rel="noopener">Open</a></p>
+    {% else %}
+      <p><b>Slides:</b> Not submitted</p>
+    {% endif %}
+  </div>
+
+  {% if can_judge_edit %}
+    <div class="card" style="margin-top:16px;">
+      <h3>Team Pre-read</h3>
+
+      {% if team_preread.inspiration %}<p><b>Inspiration:</b><br>{{ team_preread.inspiration|linebreaksbr }}</p>{% endif %}
+      {% if team_preread.description %}<p><b>Description:</b><br>{{ team_preread.description|linebreaksbr }}</p>{% endif %}
+      {% if team_preread.build_summary %}<p><b>Build summary:</b><br>{{ team_preread.build_summary|linebreaksbr }}</p>{% endif %}
+      {% if team_preread.challenges %}<p><b>Challenges:</b><br>{{ team_preread.challenges|linebreaksbr }}</p>{% endif %}
+      {% if team_preread.accomplishments %}<p><b>Accomplishments:</b><br>{{ team_preread.accomplishments|linebreaksbr }}</p>{% endif %}
+      {% if team_preread.repo_url %}<p><b>Repo:</b> <a href="{{ team_preread.repo_url }}" target="_blank" rel="noopener">{{ team_preread.repo_url }}</a></p>{% endif %}
+      {% if team_preread.notes %}<p><b>Notes:</b><br>{{ team_preread.notes|linebreaksbr }}</p>{% endif %}
+    </div>
+  {% endif %}
+
+  {% if form %}
+    <div class="card" style="margin-top:16px;">
+      <h3>Rubric + Notes</h3>
+      <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Save</button>
+      </form>
+
+      {% if score_record %}
+        <p style="margin-top:12px;">
+          <b>Score (raw):</b> {{ score_record.raw_score }}<br>
+          <b>Score (scaled so far):</b>
+          {% if score_record.scaled_score %}{{ score_record.scaled_score }}{% else %}—{% endif %}
+        </p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,6 +1,6 @@
 from django import forms
 
-from core.models import Project
+from core.models import Project, ScoreRecord
 
 
 MAIN_CATEGORY_CHOICES = [
@@ -68,4 +68,12 @@ class ProjectSubmissionForm(forms.ModelForm):
         "accomplishments",
         "notes",
       ]
+    }
+
+class ScoreRecordForm(forms.ModelForm):
+  class Meta:
+    model = ScoreRecord
+    fields = ["rubric_data", "notes", "raw_score"]
+    widgets = {
+      "notes": forms.Textarea(attrs={"rows": 6}),
     }

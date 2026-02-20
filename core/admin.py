@@ -84,16 +84,17 @@ class PresentationSubmissionAdmin(admin.ModelAdmin):
 
 @admin.register(JudgingAppointment)
 class JudgingAppointmentAdmin(admin.ModelAdmin):
-  list_display = ("project", "room", "round_name", "start_time")
-  list_filter = ("round_name", "room")
+  list_display = ("project", "team", "room", "round_name", "category", "start_time", "end_time")
+  list_filter = ("round_name", "room", "category")
   search_fields = ("project__title", "team__team_name")
-
-
+  filter_horizontal = ("judges",)
+  
+  
 @admin.register(ScoreRecord)
 class ScoreRecordAdmin(admin.ModelAdmin):
-  list_display = ("project", "judge", "raw_score", "scaled_score")
+  list_display = ("project", "judge", "appointment", "raw_score", "scaled_score", "updated_at")
   list_filter = ("judge",)
-
+  search_fields = ("project__title", "judge__username", "judge__email", "appointment__room")
 
 @admin.register(FoodCheckInStatus)
 class FoodCheckInStatusAdmin(admin.ModelAdmin):

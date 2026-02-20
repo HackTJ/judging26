@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <div class="card">
+    <h2>Judging Appointments</h2>
+
+    <form method="get" class="form-row" style="display:flex; flex-wrap:wrap; gap:12px; align-items:end;">
+      <div>
+        <label>Search (team/project)</label>
+        <input name="q" value="{{ filters.q }}" />
+      </div>
+
+      <div>
+        <label>Round</label>
+        <select name="round">
+          <option value="">All</option>
+          {% for val,label in round_choices %}
+            <option value="{{ val }}" {% if filters.round == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label>Room</label>
+        <input name="room" value="{{ filters.room }}" />
+      </div>
+
+      <div>
+        <label>Category</label>
+        <input name="category" value="{{ filters.category }}" />
+      </div>
+
+      <div>
+        <label>Start</label>
+        <input type="datetime-local" name="start" value="{{ filters.start }}">
+      </div>
+
+      <div>
+        <label>End</label>
+        <input type="datetime-local" name="end" value="{{ filters.end }}">
+      </div>
+
+      <div>
+        <label>Sort</label>
+        <select name="sort">
+          <option value="time" {% if filters.sort == "time" %}selected{% endif %}>Time</option>
+          <option value="team" {% if filters.sort == "team" %}selected{% endif %}>Team</option>
+          <option value="project" {% if filters.sort == "project" %}selected{% endif %}>Project</option>
+          <option value="room" {% if filters.sort == "room" %}selected{% endif %}>Room</option>
+          <option value="category" {% if filters.sort == "category" %}selected{% endif %}>Category</option>
+        </select>
+      </div>
+
+      <div>
+        <button type="submit">Apply</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <table style="width:100%;">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Team</th>
+          <th>Project</th>
+          <th>Room</th>
+          <th>Round</th>
+          <th>Category</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in appointments %}
+          <tr>
+            <td>{{ a.start_time|date:"M j, g:i A" }} – {{ a.end_time|date:"g:i A" }}</td>
+            <td>{{ a.team.team_name }}</td>
+            <td>{{ a.project.title }}</td>
+            <td>{{ a.room }}</td>
+            <td>{{ a.get_round_name_display }}</td>
+            <td>{{ a.category }}</td>
+            <td><a href="{% url 'appointment_detail' a.id %}">View</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7">No appointments found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

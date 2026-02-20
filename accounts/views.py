@@ -7,6 +7,8 @@ from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.db.models import Q
+from django.utils.dateparse import parse_datetime
 
 from core.models import (
   Announcement,
@@ -26,7 +28,7 @@ from core.models import (
   FoodCheckInStatus,
 )
 from .models import User
-from .forms import ProjectCategoryForm, ProjectSubmissionForm
+from .forms import ProjectCategoryForm, ProjectSubmissionForm, ScoreRecordForm
 
 EVENT_TZ = timezone.get_default_timezone()
 CATEGORY_FORM_DEADLINE = timezone.make_aware(datetime(2026, 3, 7, 23, 30), EVENT_TZ)
@@ -818,3 +820,160 @@ def presentation_viewer(request, project_id: int):
     "presentation_embed_url": _presentation_embed_url(presentation),
   }
   return render(request, "presentation_viewer.html", context)
+
+# judging
+def _user_visible_appointments(user):
+    qs = (
+        JudgingAppointment.objects
+        .select_related("team", "project", "project__team")
+        .prefetch_related("judges")
+    )
+
+    if getattr(user, "is_admin", False) or getattr(user, "is_hacktj", False):
+        return qs
+
+    if getattr(user, "is_judge", False):
+        return qs.filter(judges=user)
+
+    if getattr(user, "is_team", False):
+        if hasattr(user, "team_profile") and user.team_profile is not None:
+            return qs.filter(team=user.team_profile)
+        return qs.none()
+
+    return qs.none()
+
+
+@login_required
+def appointment_list(request):
+    qs = _user_visible_appointments(request.user)
+
+    round_name = request.GET.get("round")
+    room = request.GET.get("room")
+    category = request.GET.get("category")
+    q = request.GET.get("q", "").strip()
+
+    start = request.GET.get("start")
+    end = request.GET.get("end")
+
+    if round_name:
+        qs = qs.filter(round_name=round_name)
+    if room:
+        qs = qs.filter(room__iexact=room)
+    if category:
+        qs = qs.filter(category__iexact=category)
+
+    if q:
+        qs = qs.filter(
+            Q(team__team_name__icontains=q) |
+            Q(project__title__icontains=q)
+        )
+
+    start_dt = parse_datetime(start) if start else None
+    end_dt = parse_datetime(end) if end else None
+    if start_dt:
+        if timezone.is_naive(start_dt):
+            start_dt = timezone.make_aware(start_dt, timezone.get_current_timezone())
+        qs = qs.filter(end_time__gte=start_dt)
+    if end_dt:
+        if timezone.is_naive(end_dt):
+            end_dt = timezone.make_aware(end_dt, timezone.get_current_timezone())
+        qs = qs.filter(start_time__lte=end_dt)
+
+    sort = request.GET.get("sort", "time")
+    sort_map = {
+        "time": "start_time",
+        "team": "team__team_name",
+        "project": "project__title",
+        "room": "room",
+        "category": "category",
+    }
+    qs = qs.order_by(sort_map.get(sort, "start_time"))
+
+    context = {
+        "appointments": qs,
+        "filters": {
+            "round": round_name or "",
+            "room": room or "",
+            "category": category or "",
+            "q": q,
+            "start": start or "",
+            "end": end or "",
+            "sort": sort,
+        },
+        "round_choices": JudgingAppointment.ROUND_CHOICES,
+    }
+    return render(request, "appointments/list.html", context)
+
+
+@login_required
+def appointment_detail(request, appointment_id):
+    appointment = get_object_or_404(
+        _user_visible_appointments(request.user),
+        pk=appointment_id,
+    )
+
+    project = appointment.project
+    team = appointment.team
+
+    can_judge_edit = (
+        getattr(request.user, "is_admin", False)
+        or getattr(request.user, "is_hacktj", False)
+        or (getattr(request.user, "is_judge", False) and appointment.judges.filter(pk=request.user.pk).exists())
+    )
+
+    presentation = getattr(project, "presentation", None)
+
+    team_preread = {
+        "title": project.title,
+        "preliminary_title": project.preliminary_title,
+        "inspiration": project.inspiration,
+        "description": project.description,
+        "build_summary": project.build_summary,
+        "challenges": project.challenges,
+        "accomplishments": project.accomplishments,
+        "repo_url": project.repo_url,
+        "notes": project.notes,
+        "main_category": project.main_category,
+        "eligible_categories": project.eligible_categories,
+        "is_beginner": project.is_beginner,
+        "is_mobile": project.is_mobile,
+        "is_web": project.is_web,
+        "is_roam": project.is_roam,
+        # - project.ai_usage
+        # - project.uses_ai_ml
+    }
+
+    score_record = None
+    form = None
+
+    if can_judge_edit and getattr(request.user, "is_judge", False):
+        score_record, _ = ScoreRecord.objects.get_or_create(
+            appointment=appointment,
+            judge=request.user,
+            defaults={
+                "project": project,
+                "raw_score": 0,
+            },
+        )
+
+        if request.method == "POST":
+            form = ScoreRecordForm(request.POST, instance=score_record)
+            if form.is_valid():
+                sr = form.save(commit=False)
+                sr.project = project
+                sr.save()
+                return redirect("appointment_detail", appointment_id=appointment.id)
+        else:
+            form = ScoreRecordForm(instance=score_record)
+
+    context = {
+        "appointment": appointment,
+        "project": project,
+        "team": team,
+        "presentation": presentation,
+        "team_preread": team_preread,
+        "can_judge_edit": can_judge_edit,
+        "score_record": score_record,
+        "form": form,
+    }
+    return render(request, "appointments/detail.html", context)

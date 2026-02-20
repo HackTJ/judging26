@@ -318,6 +318,9 @@ class ScoreRecord(TimeStampedModel):
     on_delete=models.CASCADE,
     related_name="score_records",
   )
+  
+  rubric_data = models.JSONField(default=dict, blank=True)
+  
   raw_score = models.DecimalField(max_digits=6, decimal_places=2)
   scaled_score = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
   notes = models.TextField(blank=True)
