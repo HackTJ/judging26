@@ -216,7 +216,7 @@
       <nav>
         {% if user.is_authenticated %}
           <a href="{% url 'food_checkin' %}">Food</a>
-          <a href="/judging/">Judging appointments</a>
+          <a href="/appointments/">Judging appointments</a>
           {% if user.is_superuser or user.role == "admin" or user.role == "judge" or user.role == "hacktj" %}
             <a href="{% url 'project_list' %}">Project list</a>
           {% endif %}
